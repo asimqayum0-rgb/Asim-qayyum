@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkinCan — Luxury Skincare, Crafted for You</title>
+<meta name="description" content="SkinCan — premium, clean, dermatologist-tested skincare. Serums, moisturizers, sunscreens, and more." />
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- React 18 -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<!-- Babel for JSX -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          cream: '#faf7f2',
+          ivory: '#f4efe6',
+          sand: '#e8dfd1',
+          sage: '#6b7a5a',
+          forest: '#3d4a35',
+          gold: '#b8945f',
+          charcoal: '#1f1d1a',
+          muted: '#6b655c',
+        },
+        fontFamily: {
+          serif: ['"Cormorant Garamond"', 'serif'],
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+        },
+        animation: {
+          'fade-up': 'fadeUp 0.8s ease-out forwards',
+          'fade-in': 'fadeIn 0.6s ease-out forwards',
+          'slide-right': 'slideRight 0.4s ease-out forwards',
+          'float': 'float 6s ease-in-out infinite',
+        },
+        keyframes: {
+          fadeUp: {
+            '0%': { opacity: '0', transform: 'translateY(24px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' },
+          },
+          fadeIn: {
+            '0%': { opacity: '0' },
+            '100%': { opacity: '1' },
+          },
+          slideRight: {
+            '0%': { transform: 'translateX(100%)' },
+            '100%': { transform: 'translateX(0)' },
+          },
+          float: {
+            '0%, 100%': { transform: 'translateY(0px)' },
+            '50%': { transform: 'translateY(-12px)' },
+          },
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #faf7f2;
+    color: #1f1d1a;
+    -webkit-font-smoothing: antialiased;
+  }
+  .font-display { font-family: 'Cormorant Garamond', serif; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .reveal { opacity: 0; transform: translateY(24px); transition: all 0.8s cubic-bezier(.2,.8,.2,1); }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .btn-primary {
+    background: #1f1d1a; color: #faf7f2;
+    transition: all .3s ease;
+  }
+  .btn-primary:hover { background: #b8945f; letter-spacing: .04em; }
+  .product-card:hover .product-img { transform: scale(1.06); }
+  .product-img { transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+  .link-underline { position: relative; }
+  .link-underline::after {
+    content: ''; position: absolute; left: 0; bottom: -2px;
+    width: 0; height: 1px; background: currentColor;
+    transition: width .3s ease;
+  }
+  .link-underline:hover::after { width: 100%; }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: #b8945f !important;
+    box-shadow: 0 0 0 3px rgba(184,148,95,.15);
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .shimmer {
+    background: linear-gradient(90deg, #e8dfd1 0%, #f4efe6 50%, #e8dfd1 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s infinite;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, createContext, useContext } = React;
+
+/* ============================================================
+   DATA
+   ============================================================ */
+const CATEGORIES = [
+  { id: 'all',         name: 'All',         icon: '✦' },
+  { id: 'cleansers',   name: 'Cleansers',   icon: '◐' },
+  { id: 'serums',      name: 'Serums',      icon: '◈' },
+  { id: 'moisturizers',name: 'Moisturizers',icon: '◉' },
+  { id: 'sunscreens',  name: 'Sunscreens',  icon: '☀' },
+  { id: 'masks',       name: 'Face Masks',  icon: '❋' },
+  { id: 'toners',      name: 'Toners',      icon: '◌' },
+  { id: 'acne',        name: 'Acne Care',   icon: '✺' },
+  { id: 'antiaging',   name: 'Anti-Aging',  icon: '✧' },
+  { id: 'body',        name: 'Body Care',   icon: '❦' },
+];
+
+const PRODUCTS = [
+  // Cleansers
+  { id: 1,  name: 'Velvet Cloud Cleanser',        category: 'cleansers',    price: 38,  rating: 4.8, reviews: 214, bestseller: true,
+    desc: 'A pH-balanced, milky gel cleanser that dissolves makeup and impurities without stripping the skin barrier.',
+    img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&q=80',
+    ingredients: ['Squalane','Oat Extract','Glycerin'] },
+  { id: 2,  name: 'Rose Petal Cleansing Balm',    category: 'cleansers',    price: 44,  rating: 4.7, reviews: 182,
+    desc: 'Luxurious melting balm that transforms into milk on contact, leaving skin soft and dewy.',
+    img: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=800&q=80',
+    ingredients: ['Rosehip Oil','Jojoba','Vitamin E'] },
+  { id: 3,  name: 'Gentle Foaming Wash',          category: 'cleansers',    price: 29,  rating: 4.6, reviews: 301,
+    desc: 'Lightweight foam for daily use. Suitable for sensitive and combination skin.',
+    img: 'https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=800&q=80',
+    ingredients: ['Aloe','Chamomile','Green Tea'] },
+
+  // Serums
+  { id: 4,  name: 'Golden Hour Vitamin C Serum',  category: 'serums',       price: 68,  rating: 4.9, reviews: 512, bestseller: true, new: true,
+    desc: '20% stabilized Vitamin C with ferulic acid. Brightens, firms, and defends against environmental stress.',
+    img: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800&q=80',
+    ingredients: ['Vitamin C','Ferulic Acid','Hyaluronic Acid'] },
+  { id: 5,  name: 'Hyaluron Plumping Serum',      category: 'serums',       price: 54,  rating: 4.8, reviews: 389,
+    desc: 'Triple-weight hyaluronic acid for deep, long-lasting hydration and a plump, glass-skin finish.',
+    img: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+    ingredients: ['Hyaluronic Acid','Panthenol','Ceramides'] },
+  { id: 6,  name: 'Niacinamide 10% + Zinc',       category: 'serums',       price: 32,  rating: 4.7, reviews: 624,
+    desc: 'Visibly refines pores, balances oil, and calms redness. A daily skin essential.',
+    img: 'https://images.unsplash.com/photo-1617897903246-719242758050?w=800&q=80',
+    ingredients: ['Niacinamide','Zinc PCA','Hyaluronate'] },
+
+  // Moisturizers
+  { id: 7,  name: 'Cashmere Cream Moisturizer',   category: 'moisturizers', price: 62,  rating: 4.9, reviews: 447, bestseller: true,
+    desc: 'A whipped, deeply nourishing cream with ceramides and squalane. For dry to normal skin.',
+    img: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=800&q=80',
+    ingredients: ['Ceramides','Squalane','Shea Butter'] },
+  { id: 8,  name: 'Watergel Hydra-Lock',          category: 'moisturizers', price: 48,  rating: 4.6, reviews: 278,
+    desc: 'Oil-free gel-cream that quenches oily and combination skin without clogging pores.',
+    img: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=800&q=80',
+    ingredients: ['Aloe','Hyaluronate','Seaweed'] },
+  { id: 9,  name: 'Barrier Repair Balm',          category: 'moisturizers', price: 58,  rating: 4.8, reviews: 199, new: true,
+    desc: 'Intensive overnight balm that restores a compromised skin barrier in just 7 days.',
+    img: 'https://images.unsplash.com/photo-1620916297397-330d3b083186?w=800&q=80',
+    ingredients: ['Oat Lipids','Centella','Madecassoside'] },
+
+  // Sunscreens
+  { id: 10, name: 'Invisible Shield SPF 50+',     category: 'sunscreens',   price: 36,  rating: 4.8, reviews: 812, bestseller: true,
+    desc: 'Weightless, invisible, zero white cast. Broad-spectrum UVA/UVB protection with a satin finish.',
+    img: 'https://images.unsplash.com/photo-1556228852-80b6e5eeff06?w=800&q=80',
+    ingredients: ['Zinc Oxide','Niacinamide','Vitamin E'] },
+  { id: 11, name: 'Mineral Glow SPF 40',          category: 'sunscreens',   price: 42,  rating: 4.7, reviews: 256,
+    desc: 'Tinted mineral sunscreen that leaves a soft, lit-from-within glow.',
+    img: 'https://images.unsplash.com/photo-1631730486572-226d1f595b68?w=800&q=80',
+    ingredients: ['Zinc Oxide','Iron Oxides','Squalane'] },
+
+  // Masks
+  { id: 12, name: 'Honey Glow Sleeping Mask',     category: 'masks',        price: 46,  rating: 4.8, reviews: 331,
+    desc: 'Wake up to plump, glowing skin. Manuka honey and propolis work overnight.',
+    img: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa9e8?w=800&q=80',
+    ingredients: ['Manuka Honey','Propolis','Royal Jelly'] },
+  { id: 13, name: 'Charcoal Detox Clay Mask',     category: 'masks',        price: 34,  rating: 4.5, reviews: 189,
+    desc: 'Draws out impurities and refines pores without over-drying.',
+    img: 'https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=800&q=80',
+    ingredients: ['Activated Charcoal','Kaolin','Tea Tree'] },
+
+  // Toners
+  { id: 14, name: 'Mist Essence Toner',           category: 'toners',       price: 32,  rating: 4.7, reviews: 278,
+    desc: 'A hydrating, alcohol-free toner that preps skin for serums.',
+    img: 'https://images.unsplash.com/photo-1601049541289-9b1b7bbbfe19?w=800&q=80',
+    ingredients: ['Birch Sap','Green Tea','Panthenol'] },
+  { id: 15, name: 'PHA Glow Toner',               category: 'toners',       price: 38,  rating: 4.6, reviews: 142, new: true,
+    desc: 'Gentle exfoliating toner for a smooth, even-toned complexion.',
+    img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=800&q=80',
+    ingredients: ['Gluconolactone','Willow Bark','Aloe'] },
+
+  // Acne Care
+  { id: 16, name: 'Blemish Control Gel',          category: 'acne',         price: 28,  rating: 4.5, reviews: 402,
+    desc: 'Targets breakouts with 2% salicylic acid and calming centella.',
+    img: 'https://images.unsplash.com/photo-1620916297397-330d3b083186?w=800&q=80',
+    ingredients: ['Salicylic Acid','Centella','Zinc'] },
+  { id: 17, name: 'Clear Skin Serum',             category: 'acne',         price: 42,  rating: 4.6, reviews: 215,
+    desc: 'Reduces redness and prevents future breakouts with azelaic acid.',
+    img: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=800&q=80',
+    ingredients: ['Azelaic Acid','Niacinamide','Tea Tree'] },
+
+  // Anti-Aging
+  { id: 18, name: 'Retinol Renewal 0.3%',         category: 'antiaging',    price: 72,  rating: 4.8, reviews: 356, bestseller: true,
+    desc: 'Encapsulated retinol for smoother texture and fewer fine lines — without irritation.',
+    img: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80',
+    ingredients: ['Retinol','Peptides','Squalane'] },
+  { id: 19, name: 'Peptide Firming Cream',        category: 'antiaging',    price: 84,  rating: 4.9, reviews: 198, new: true,
+    desc: 'Multi-peptide complex visibly lifts and firms sagging skin.',
+    img: 'https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=800&q=80',
+    ingredients: ['Matrixyl','Argireline','Ceramides'] },
+
+  // Body Care
+  { id: 20, name: 'Silk Body Oil',                category: 'body',         price: 48,  rating: 4.8, reviews: 267,
+    desc: 'A fast-absorbing dry oil that leaves skin luminous and softly scented.',
+    img: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?w=800&q=80',
+    ingredients: ['Jojoba','Rosehip','Vitamin E'] },
+  { id: 21, name: 'Whipped Shea Soufflé',         category: 'body',         price: 36,  rating: 4.7, reviews: 189,
+    desc: 'Air-whipped body butter for 48-hour moisture and a velvet finish.',
+    img: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&q=80',
+    ingredients: ['Shea Butter','Cocoa Butter','Coconut Oil'] },
+];
+
+/* ============================================================
+   CONTEXT — Cart, Wishlist, Toast
+   ============================================================ */
+const StoreContext = createContext(null);
+
+function StoreProvider({ children }) {
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skincan_cart')) || []; } catch { return []; }
+  });
+  const [wishlist, setWishlist] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('skincan_wish')) || []; } catch { return []; }
+  });
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => { localStorage.setItem('skincan_cart', JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { localStorage.setItem('skincan_wish', JSON.stringify(wishlist)); }, [wishlist]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(window.__toastT);
+    window.__toastT = setTimeout(() => setToast(null), 2400);
+  };
+
+  const addToCart = (product, qty = 1) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.id === product.id);
+      if (existing) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + qty } : i);
+      return [...prev, { ...product, qty }];
+    });
+    showToast(`${product.name} added to bag`);
+  };
+
+  const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
+  const updateQty = (id, qty) => {
+    if (qty <= 0) return removeFromCart(id);
+    setCart(prev => prev.map(i => i.id === id ? { ...i, qty } : i));
+  };
+  const clearCart = () => setCart([]);
+
+  const toggleWishlist = (product) => {
+    setWishlist(prev => {
+      const exists = prev.find(p => p.id === product.id);
+      if (exists) { showToast('Removed from wishlist'); return prev.filter(p => p.id !== product.id); }
+      showToast('Added to wishlist ♡');
+      return [...prev, product];
+    });
+  };
+  const isWished = (id) => wishlist.some(p => p.id === id);
+
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const cartTotal = cart.reduce((s, i) => s + i.qty * i.price, 0);
+
+  return (
+    <StoreContext.Provider value={{
+      cart, addToCart, removeFromCart, updateQty, clearCart, cartCount, cartTotal,
+      wishlist, toggleWishlist, isWished,
+      toast, showToast,
+    }}>
+      {children}
+    </StoreContext.Provider>
+  );
+}
+const useStore = () => useContext(StoreContext);
+
+/* ============================================================
+   ICONS (inline SVG)
+   ============================================================ */
+const Icon = {
+  Bag: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 016 0"/></svg>,
+  Heart: (p) => <svg viewBox="0 0 24 24" fill={p.filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" {...p}><path d="M12 21s-7-4.5-9.5-9C.5 8 3 4 7 4c2 0 3.5 1 5 3 1.5-2 3-3 5-3 4 0 6.5 4 4.5 8-2.5 4.5-9.5 9-9.5 9z"/></svg>,
+  Search: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>,
+  Close: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M6 6l12 12M18 6L6 18"/></svg>,
+  Star: (p) => <svg viewBox="0 0 24 24" fill="currentColor" {...p}><path d="M12 2l2.9 6.9L22 10l-5.5 4.8L18 22l-6-3.6L6 22l1.5-7.2L2 10l7.1-1.1z"/></svg>,
+  Menu: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M4 7h16M4 12h16M4 17h16"/></svg>,
+  Check: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}><path d="M5 12l5 5L20 7"/></svg>,
+  Arrow: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M5 12h14M13 5l7 7-7 7"/></svg>,
+  Leaf: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M4 20c0-8 8-16 16-16 0 8-8 16-16 16z"/><path d="M4 20L14 10"/></svg>,
+  Truck: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>,
+  Shield: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>,
+  Sparkle: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>,
+};
+
+/* ============================================================
+   REVEAL ON SCROLL HOOK
+   ============================================================ */
+function useReveal() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { el.classList.add('visible'); io.unobserve(el); }
+    }, { threshold: 0.12 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return ref;
+}
+const Reveal = ({ children, className = '', delay = 0 }) => {
+  const ref = useReveal();
+  return <div ref={ref} className={`reveal ${className}`} style={{ transitionDelay: `${delay}ms` }}>{children}</div>;
+};
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+function Header({ onNav, currentView, onOpenCart, onOpenSearch }) {
+  const { cartCount, wishlist } = useStore();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const navItems = [
+    { id: 'home', label: 'Home' },
+    { id: 'shop', label: 'Shop' },
+    { id: 'about', label: 'Our Story' },
+    { id: 'contact', label: 'Contact' },
+  ];
+
+  return (
+    <header className={`fixed top-0 inset-x-0 z-40 transition-all duration-500 ${scrolled ? 'bg-cream/90 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,.05)]' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-5 lg:px-10 flex items-center justify-between h-20">
+        <button onClick={() => onNav('home')} className="flex items-center gap-2 group">
+          <span className="w-9 h-9 rounded-full bg-forest text-cream flex items-center justify-center font-display text-xl">S</span>
+          <span className="font-display text-2xl tracking-wide text-charcoal">Skin<span className="text-gold">Can</span></span>
+        </button>
+
+        <nav className="hidden md:flex items-center gap-10 text-sm tracking-wide text-charcoal/80">
+          {navItems.map(n => (
+            <button key={n.id} onClick={() => onNav(n.id)}
+              className={`link-underline transition ${currentView === n.id ? 'text-charcoal' : 'hover:text-charcoal'}`}>
+              {n.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <button aria-label="Search" onClick={onOpenSearch}
+            className="w-10 h-10 rounded-full hover:bg-ivory flex items-center justify-center text-charcoal transition">
+            <Icon.Search className="w-5 h-5" />
+          </button>
+          <button aria-label="Wishlist" onClick={() => onNav('wishlist')}
+            className="relative w-10 h-10 rounded-full hover:bg-ivory flex items-center justify-center text-charcoal transition">
+            <Icon.Heart className="w-5 h-5" />
+            {wishlist.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-gold text-cream text-[10px] flex items-center justify-center font-semibold">{wishlist.length}</span>
+            )}
+          </button>
+          <button aria-label="Cart" onClick={onOpenCart}
+            className="relative w-10 h-10 rounded-full hover:bg-ivory flex items-center justify-center text-charcoal transition">
+            <Icon.Bag className="w-5 h-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-forest text-cream text-[10px] flex items-center justify-center font-semibold">{cartCount}</span>
+            )}
+          </button>
+          <button aria-label="Menu" onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden w-10 h-10 rounded-full hover:bg-ivory flex items-center justify-center text-charcoal">
+            <Icon.Menu className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {mobileOpen && (
+        <div className="md:hidden bg-cream border-t border-sand animate-fade-in">
+          <div className="px-5 py-6 flex flex-col gap-4 text-charcoal">
+            {navItems.map(n => (
+              <button key={n.id} onClick={() => { onNav(n.id); setMobileOpen(false); }}
+                className="text-left py-2 border-b border-sand/50">{n.label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+function Hero({ onShop }) {
+  return (
+    <section className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-20 -right-20 w-[500px] h-[500px] rounded-full bg-sand/60 blur-3xl animate-float"></div>
+        <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full bg-ivory blur-3xl"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-5 lg:px-10 grid md:grid-cols-2 gap-12 items-center">
+        <div className="animate-fade-up">
+          <span className="inline-flex items-center gap-2 text-xs tracking-[0.3em] uppercase text-gold mb-6">
+            <span className="w-8 h-px bg-gold"></span> New Collection · Summer 2026
+          </span>
+          <h1 className="font-display text-5xl md:text-7xl leading-[1.05] text-charcoal mb-6">
+            Skin that <em className="text-gold not-italic">glows</em><br/>from the inside out.
+          </h1>
+          <p className="text-muted text-lg max-w-lg mb-10 leading-relaxed">
+            Clean, clinical, consciously crafted. Dermatologist-tested formulas that honor your skin — and the planet.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <button onClick={onShop} className="btn-primary px-8 py-4 text-sm tracking-[0.2em] uppercase inline-flex items-center gap-3">
+              Shop the Edit <Icon.Arrow className="w-4 h-4"/>
+            </button>
+            <button className="px-8 py-4 text-sm tracking-[0.2em] uppercase border border-charcoal/20 hover:border-charcoal transition">
+              Our Story
+            </button>
+          </div>
+
+          <div className="mt-14 flex items-center gap-8 text-xs tracking-widest uppercase text-muted">
+            <div className="flex items-center gap-2"><Icon.Leaf className="w-4 h-4 text-sage"/>Clean</div>
+            <div className="flex items-center gap-2"><Icon.Shield className="w-4 h-4 text-sage"/>Cruelty-Free</div>
+            <div className="flex items-center gap-2"><Icon.Sparkle className="w-4 h-4 text-sage"/>Derm-Tested</div>
+          </div>
+        </div>
+
+        <div className="relative h-[500px] md:h-[600px] animate-fade-in">
+          <div className="absolute inset-0 rounded-[200px_200px_40px_40px] overflow-hidden shadow-2xl">
+            <img src="https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=1000&q=85"
+              alt="Luxury skincare"
+              className="w-full h-full object-cover" />
+          </div>
+          <div className="absolute -bottom-6 -left-6 bg-cream p-5 rounded-2xl shadow-xl max-w-[220px] animate-float">
+            <div className="flex items-center gap-1 text-gold mb-2">
+              {[...Array(5)].map((_,i) => <Icon.Star key={i} className="w-3.5 h-3.5"/>)}
+            </div>
+            <p className="text-xs text-charcoal leading-snug">"My skin has never looked better. Truly transformative."</p>
+            <p className="text-[10px] text-muted mt-2 tracking-widest uppercase">— Vogue Beauty</p>
+          </div>
+          <div className="absolute -top-4 -right-4 bg-forest text-cream p-4 rounded-2xl shadow-xl animate-float" style={{animationDelay:'1.5s'}}>
+            <p className="font-display text-3xl leading-none">98%</p>
+            <p className="text-[10px] tracking-widest uppercase mt-1">Saw results in 14 days</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   MARQUEE
+   ============================================================ */
+function Marquee() {
+  const items = ['Free Shipping over $60', '✦', '30-Day Returns', '✦', 'Clean & Cruelty-Free', '✦', 'Dermatologist Tested', '✦', 'Recyclable Packaging', '✦'];
+  return (
+    <div className="bg-forest text-cream py-4 overflow-hidden border-y border-forest">
+      <div className="flex gap-12 whitespace-nowrap animate-[marquee_30s_linear_infinite]"
+        style={{ animation: 'marquee 30s linear infinite' }}>
+        <style>{`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
+        {[...items, ...items, ...items].map((t, i) => (
+          <span key={i} className="text-xs tracking-[0.3em] uppercase">{t}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   CATEGORY STRIP
+   ============================================================ */
+function CategoryStrip({ active, onChange }) {
+  return (
+    <section className="py-16 md:py-24 bg-ivory">
+      <div className="max-w-7xl mx-auto px-5 lg:px-10">
+        <Reveal>
+          <div className="text-center mb-12">
+            <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">Shop by Category</p>
+            <h2 className="font-display text-4xl md:text-5xl text-charcoal">Rituals for every skin</h2>
+          </div>
+        </Reveal>
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
+          {CATEGORIES.filter(c => c.id !== 'all').map((cat, i) => (
+            <Reveal key={cat.id} delay={i * 60}>
+              <button onClick={() => onChange(cat.id)}
+                className={`group relative p-6 md:p-8 rounded-2xl border transition-all duration-500 text-center
+                  ${active === cat.id ? 'bg-forest text-cream border-forest' : 'bg-cream border-sand hover:border-forest'}`}>
+                <div className="font-display text-3xl mb-2">{cat.icon}</div>
+                <div className="text-xs tracking-[0.2em] uppercase">{cat.name}</div>
+              </button>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   PRODUCT CARD
+   ============================================================ */
+function ProductCard({ product, onOpen, delay = 0 }) {
+  const { addToCart, toggleWishlist, isWished } = useStore();
+  const wished = isWished(product.id);
+
+  return (
+    <Reveal delay={delay}>
+      <div className="product-card group relative bg-cream rounded-2xl overflow-hidden border border-sand/50 hover:border-forest/30 transition-all duration-500">
+        <div className="relative aspect-[4/5] overflow-hidden bg-ivory">
+          <img src={product.img} alt={product.name} loading="lazy"
+            className="product-img w-full h-full object-cover" />
+
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+            {product.bestseller && <span className="bg-forest text-cream text-[10px] tracking-widest uppercase px-2.5 py-1 rounded-full">Bestseller</span>}
+            {product.new && <span className="bg-gold text-cream text-[10px] tracking-widest uppercase px-2.5 py-1 rounded-full">New</span>}
+          </div>
+
+          <button aria-label="Wishlist" onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }}
+            className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition
+              ${wished ? 'bg-cream text-forest' : 'bg-cream/80 backdrop-blur text-charcoal opacity-0 group-hover:opacity-100'}`}>
+            <Icon.Heart className="w-4 h-4" filled={wished}/>
+          </button>
+
+          <button onClick={() => addToCart(product)}
+            className="absolute bottom-3 inset-x-3 btn-primary py-3 text-xs tracking-[0.2em] uppercase opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
+            Add to Bag
+          </button>
+        </div>
+
+        <button onClick={() => onOpen(product)} className="block text-left p-5 w-full">
+          <p className="text-[10px] tracking-[0.25em] uppercase text-gold mb-1.5">{CATEGORIES.find(c => c.id === product.category)?.name}</p>
+          <h3 className="font-display text-xl text-charcoal mb-2 group-hover:text-gold transition">{product.name}</h3>
+          <p className="text-sm text-muted line-clamp-2 mb-3 leading-relaxed">{product.desc}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 text-gold">
+              <Icon.Star className="w-3.5 h-3.5"/>
+              <span className="text-xs text-charcoal font-medium">{product.rating}</span>
+              <span className="text-xs text-muted">({product.reviews})</span>
+            </div>
+            <span className="font-display text-xl text-charcoal">${product.price}</span>
+          </div>
+        </button>
+      </div>
+    </Reveal>
+  );
+}
+
+/* ============================================================
+   FEATURED PRODUCTS
+   ============================================================ */
+function FeaturedProducts({ onOpen, initialCategory = 'all' }) {
+  const [active, setActive] = useState(initialCategory);
+  const [sort, setSort] = useState('featured');
+
+  useEffect(() => { setActive(initialCategory); }, [initialCategory]);
+
+  const filtered = useMemo(() => {
+    let list = active === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.category === active);
+    if (sort === 'price-asc') list = [...list].sort((a,b) => a.price - b.price);
+    if (sort === 'price-desc') list = [...list].sort((a,b) => b.price - a.price);
+    if (sort === 'rating') list = [...list].sort((a,b) => b.rating - a.rating);
+    return list;
+  }, [active, sort]);
+
+  return (
+    <section id="shop" className="py-20 md:py-28">
+      <div className="max-w-7xl mx-auto px-5 lg:px-10">
+        <Reveal>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
+            <div>
+              <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">The Edit</p>
+              <h2 className="font-display text-4xl md:text-5xl text-charcoal">Bestsellers & new arrivals</h2>
+            </div>
+            <select value={sort} onChange={e => setSort(e.target.value)}
+              className="bg-cream border border-sand rounded-full px-5 py-2.5 text-sm text-charcoal">
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+            </select>
+          </div>
+        </Reveal>
+
+        <Reveal>
+          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-4 mb-10">
+            {CATEGORIES.map(c => (
+              <button key={c.id} onClick={() => setActive(c.id)}
+                className={`px-5 py-2.5 rounded-full text-xs tracking-[0.2em] uppercase whitespace-nowrap border transition
+                  ${active === c.id ? 'bg-charcoal text-cream border-charcoal' : 'bg-cream text-charcoal border-sand hover:border-charcoal'}`}>
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </Reveal>
+
+        {filtered.length === 0 ? (
+          <div className="text-center py-20 text-muted">No products in this category yet.</div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-7">
+            {filtered.map((p, i) => <ProductCard key={p.id} product={p} onOpen={onOpen} delay={(i % 4) * 80}/>)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   PRODUCT MODAL
+   ============================================================ */
+function ProductModal({ product, onClose }) {
+  const { addToCart, toggleWishlist, isWished } = useStore();
+  const [qty, setQty] = useState(1);
+  const [tab, setTab] = useState('desc');
+  useEffect(() => { document.body.style.overflow = 'hidden'; return () => document.body.style.overflow = ''; }, []);
+  if (!product) return null;
+  const wished = isWished(product.id);
+
+  const reviews = [
+    { name: 'Amelia R.', rating: 5, date: '2 weeks ago', text: 'Absolutely love this. My skin feels softer and more radiant after just one week.' },
+    { name: 'Priya K.', rating: 5, date: '1 month ago', text: 'Texture is divine. Absorbs quickly without any greasy residue. Will repurchase.' },
+    { name: 'Jordan L.', rating: 4, date: '1 month ago', text: 'Great product overall. Packaging is beautiful and the formula delivers.' },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-charcoal/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
+      <div className="bg-cream rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-up" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} aria-label="Close"
+          className="absolute top-5 right-5 w-10 h-10 rounded-full bg-cream/80 hover:bg-ivory flex items-center justify-center">
+          <Icon.Close className="w-5 h-5"/>
+        </button>
+        <div className="grid md:grid-cols-2 gap-0">
+          <div className="aspect-square md:aspect-auto bg-ivory">
+            <img src={product.img} alt={product.name} className="w-full h-full object-cover"/>
+          </div>
+          <div className="p-8 md:p-10">
+            <p className="text-[10px] tracking-[0.3em] uppercase text-gold mb-2">{CATEGORIES.find(c => c.id === product.category)?.name}</p>
+            <h2 className="font-display text-4xl text-charcoal mb-3">{product.name}</h2>
+            <div className="flex items-center gap-2 mb-5">
+              <div className="flex text-gold">{[...Array(5)].map((_,i) => <Icon.Star key={i} className={`w-4 h-4 ${i < Math.round(product.rating) ? '' : 'opacity-30'}`}/>)}</div>
+              <span className="text-sm text-muted">{product.rating} · {product.reviews} reviews</span>
+            </div>
+            <p className="font-display text-3xl text-charcoal mb-6">${product.price}</p>
+            <p className="text-muted leading-relaxed mb-6">{product.desc}</p>
+
+            <div className="flex gap-2 mb-6">
+              <button onClick={() => setTab('desc')} className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 ${tab==='desc'?'border-charcoal':'border-transparent text-muted'}`}>Description</button>
+              <button onClick={() => setTab('ing')} className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 ${tab==='ing'?'border-charcoal':'border-transparent text-muted'}`}>Ingredients</button>
+              <button onClick={() => setTab('rev')} className={`px-4 py-2 text-xs tracking-widest uppercase border-b-2 ${tab==='rev'?'border-charcoal':'border-transparent text-muted'}`}>Reviews</button>
+            </div>
+
+            {tab === 'desc' && <p className="text-sm text-muted leading-relaxed">Formulated with clean, dermatologist-approved ingredients. Suitable for all skin types. Use morning and night on cleansed skin.</p>}
+            {tab === 'ing' && (
+              <ul className="flex flex-wrap gap-2">
+                {product.ingredients.map(i => <li key={i} className="text-xs px-3 py-1.5 bg-ivory rounded-full text-charcoal">{i}</li>)}
+              </ul>
+            )}
+            {tab === 'rev' && (
+              <div className="space-y-4">
+                {reviews.map((r,i) => (
+                  <div key={i} className="border-b border-sand pb-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">{r.name}</span>
+                      <span className="text-xs text-muted">{r.date}</span>
+                    </div>
+                    <div className="flex text-gold mb-2">{[...Array(r.rating)].map((_,j) => <Icon.Star key={j} className="w-3 h-3"/>)}</div>
+                    <p className="text-sm text-muted">{r.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 flex items-center gap-4">
+              <div className="flex items-center border border-sand rounded-full">
+                <button onClick={() => setQty(Math.max(1, qty-1))} className="w-10 h-10 text-lg">−</button>
+                <span className="w-8 text-center text-sm">{qty}</span>
+                <button onClick={() => setQty(qty+1)} className="w-10 h-10 text-lg">+</button>
+              </div>
+              <button onClick={() => { addToCart(product, qty); onClose(); }}
+                className="btn-primary flex-1 py-4 text-xs tracking-[0.25em] uppercase">Add to Bag · ${product.price * qty}</button>
+              <button onClick={() => toggleWishlist(product)}
+                className={`w-12 h-12 rounded-full border flex items-center justify-center transition ${wished ? 'bg-forest text-cream border-forest' : 'border-sand hover:border-charcoal'}`}>
+                <Icon.Heart className="w-5 h-5" filled={wished}/>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   CART DRAWER
+   ============================================================ */
+function CartDrawer({ open, onClose, onCheckout }) {
+  const { cart, updateQty, removeFromCart, cartTotal } = useStore();
+  useEffect(() => { document.body.style.overflow = open ? 'hidden' : ''; }, [open]);
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 animate-fade-in">
+      <div className="absolute inset-0 bg-charcoal/40 backdrop-blur-sm" onClick={onClose}></div>
+      <aside className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-cream shadow-2xl animate-slide-right flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-sand">
+          <h3 className="font-display text-2xl">Your Bag ({cart.length})</h3>
+          <button onClick={onClose} className="w-9 h-9 rounded-full hover:bg-ivory flex items-center justify-center">
+            <Icon.Close className="w-5 h-5"/>
+          </button>
+        </div>
+
+        {cart.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+            <div className="w-20 h-20 rounded-full bg-ivory flex items-center justify-center mb-5">
+              <Icon.Bag className="w-8 h-8 text-muted"/>
+            </div>
+            <p className="font-display text-2xl mb-2">Your bag is empty</p>
+            <p className="text-sm text-muted mb-6">Discover our bestsellers and begin your ritual.</p>
+            <button onClick={onClose} className="btn-primary px-8 py-3 text-xs tracking-[0.25em] uppercase">Continue Shopping</button>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {cart.map(item => (
+                <div key={item.id} className="flex gap-4">
+                  <img src={item.img} alt={item.name} className="w-20 h-24 object-cover rounded-xl bg-ivory"/>
+                  <div className="flex-1">
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-gold mb-1">{CATEGORIES.find(c => c.id === item.category)?.name}</p>
+                    <h4 className="font-display text-lg leading-tight mb-1">{item.name}</h4>
+                    <p className="text-sm text-charcoal font-medium mb-2">${item.price}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center border border-sand rounded-full">
+                        <button onClick={() => updateQty(item.id, item.qty - 1)} className="w-7 h-7 text-sm">−</button>
+                        <span className="w-6 text-center text-xs">{item.qty}</span>
+                        <button onClick={() => updateQty(item.id, item.qty + 1)} className="w-7 h-7 text-sm">+</button>
+                      </div>
+                      <button onClick={() => removeFromCart(item.id)} className="text-xs text-muted hover:text-charcoal link-underline">Remove</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-sand p-6 space-y-3 bg-ivory">
+              <div className="flex justify-between text-sm"><span className="text-muted">Subtotal</span><span>${cartTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted">Shipping</span><span>{cartTotal >= 60 ? 'Free' : '$6.00'}</span></div>
+              <div className="flex justify-between font-display text-2xl pt-2 border-t border-sand">
+                <span>Total</span><span>${(cartTotal + (cartTotal >= 60 ? 0 : 6)).toFixed(2)}</span>
+              </div>
+              <button onClick={onCheckout} className="btn-primary w-full py-4 text-xs tracking-[0.25em] uppercase mt-2">Secure Checkout</button>
+              <p className="text-[10px] text-center text-muted tracking-widest uppercase">Free shipping on orders over $60</p>
+            </div>
+          </>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+/* ============================================================
+   SEARCH OVERLAY
+   ============================================================ */
+function SearchOverlay({ open, onClose, onOpenProduct }) {
+  const [q, setQ] = useState('');
+  const inputRef = useRef(null);
+  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 100); else setQ(''); }, [open]);
+  if (!open) return null;
+  const results = q.length > 1 ? PRODUCTS.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.desc.toLowerCase().includes(q.toLowerCase())).slice(0, 6) : [];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-cream/95 backdrop-blur-md animate-fade-in">
+      <div className="max-w-3xl mx-auto px-5 pt-24">
+        <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 rounded-full hover:bg-ivory flex items-center justify-center">
+          <Icon.Close className="w-5 h-5"/>
+        </button>
+        <div className="flex items-center gap-4 border-b border-charcoal pb-4">
+          <Icon.Search className="w-6 h-6 text-muted"/>
+          <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Search serums, moisturizers, rituals..."
+            className="flex-1 bg-transparent text-2xl md:text-3xl font-display placeholder:text-muted/50 focus:outline-none"/>
+        </div>
+        {q.length > 1 && (
+          <div className="mt-8">
+            <p className="text-xs tracking-[0.3em] uppercase text-gold mb-5">{results.length} results</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              {results.map(p => (
+                <button key={p.id} onClick={() => { onOpenProduct(p); onClose(); }}
+                  className="flex gap-4 p-3 rounded-xl hover:bg-ivory text-left transition">
+                  <img src={p.img} alt={p.name} className="w-16 h-20 object-cover rounded-lg bg-ivory"/>
+                  <div>
+                    <p className="text-[10px] tracking-widest uppercase text-gold">{CATEGORIES.find(c => c.id === p.category)?.name}</p>
+                    <h4 className="font-display text-lg leading-tight">{p.name}</h4>
+                    <p className="text-sm text-charcoal">${p.price}</p>
+                  </div>
+                </button>
+              ))}
+              {results.length === 0 && <p className="text-muted">No matches. Try "serum" or "moisturizer".</p>}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   STORY / VALUES SECTION
+   ============================================================ */
+function StorySection() {
+  const values = [
+    { icon: <Icon.Leaf className="w-6 h-6"/>, title: 'Clean Formulas', text: 'Every ingredient is vetted. No parabens, sulfates, or synthetic fragrance.' },
+    { icon: <Icon.Shield className="w-6 h-6"/>, title: 'Dermatologist Tested', text: 'Clinically proven. Safe for sensitive skin. Backed by science.' },
+    { icon: <Icon.Sparkle className="w-6 h-6"/>, title: 'Visible Results', text: '98% of users saw improvement in skin texture within 14 days.' },
+    { icon: <Icon.Truck className="w-6 h-6"/>, title: 'Conscious Packaging', text: 'Recyclable glass, FSC-certified paper, carbon-neutral shipping.' },
+  ];
+  return (
+    <section id="about" className="py-24 bg-ivory">
+      <div className="max-w-7xl mx-auto px-5 lg:px-10">
+        <div className="grid md:grid-cols-2 gap-16 items-center mb-20">
+          <Reveal>
+            <div className="relative">
+              <div className="aspect-[4/5] rounded-3xl overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=900&q=85" alt="Our lab" className="w-full h-full object-cover"/>
+              </div>
+              <div className="absolute -bottom-8 -right-8 bg-cream p-6 rounded-2xl shadow-xl max-w-xs hidden md:block">
+                <p className="font-display text-5xl text-gold leading-none">12+</p>
+                <p className="text-xs tracking-widest uppercase text-muted mt-2">Years crafting skincare</p>
+              </div>
+            </div>
+          </Reveal>
+          <Reveal delay={200}>
+            <p className="text-xs tracking-[0.3em] uppercase text-gold mb-4">Our Philosophy</p>
+            <h2 className="font-display text-4xl md:text-5xl text-charcoal mb-6 leading-tight">
+              Skincare should feel like a <em className="text-gold not-italic">ritual</em>, not a routine.
+            </h2>
+            <p className="text-muted leading-relaxed mb-4">
+              Born in a small Parisian lab and refined over a decade of clinical research, SkinCan is a love letter to skin that deserves better. We believe in fewer, better products — formulas that work in harmony with your skin's natural rhythm.
+            </p>
+            <p className="text-muted leading-relaxed">
+              Every bottle is a promise: clean ingredients, visible results, and a lighter footprint on the planet we share.
+            </p>
+          </Reveal>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {values.map((v, i) => (
+            <Reveal key={i} delay={i * 100}>
+              <div className="bg-cream p-8 rounded-2xl border border-sand/50 hover:border-forest/30 transition h-full">
+                <div className="w-12 h-12 rounded-full bg-ivory text-forest flex items-center justify-center mb-5">{v.icon}</div>
+                <h3 className="font-display text-xl mb-2">{v.title}</h3>
+                <p className="text-sm text-muted leading-relaxed">{v.text}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   TESTIMONIALS
+   ============================================================ */
+function Testimonials() {
+  const items = [
+    { name: 'Sofia M.', role: 'Verified Buyer', text: 'I\'ve tried every luxury brand out there. SkinCan is the only one that actually delivers. My skin has never looked better.', rating: 5 },
+    { name: 'Dr. Anika Rao', role: 'Dermatologist', text: 'I recommend SkinCan to my patients. The formulations are elegant, effective, and genuinely clean.', rating: 5 },
+    { name: 'Elena K.', role: 'Beauty Editor', text: 'The Golden Hour Serum is a masterpiece. It has replaced three products in my routine.', rating: 5 },
+  ];
+  return (
+    <section className="py-24 bg-forest text-cream">
+      <div className="max-w-7xl mx-auto px-5 lg:px-10">
+        <Reveal>
+          <div className="text-center mb-14">
+            <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">Loved by Thousands</p>
+            <h2 className="font-display text-4xl md:text-5xl">Real rituals. Real results.</h2>
+          </div>
+        </Reveal>
+        <div className="grid md:grid-cols-3 gap-6">
+          {items.map((t, i) => (
+            <Reveal key={i} delay={i * 120}>
+              <div className="bg-forest/50 border border-cream/10 p-8 rounded-2xl h-full">
+                <div className="flex text-gold mb-4">{[...Array(t.rating)].map((_,j) => <Icon.Star key={j} className="w-4 h-4"/>)}</div>
+                <p className="font-display text-xl leading-relaxed mb-6">"{t.text}"</p>
+                <div className="border-t border-cream/10 pt-4">
+                  <p className="font-medium">{t.name}</p>
+                  <p className="text-xs tracking-widest uppercase text-cream/60 mt-1">{t.role}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   NEWSLETTER
+   ============================================================ */
+function Newsletter() {
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
+  const submit = (e) => { e.preventDefault(); if (email.includes('@')) { setDone(true); setEmail(''); } };
+  return (
+    <section className="py-24 bg-cream">
+      <div className="max-w-3xl mx-auto px-5 text-center">
+        <Reveal>
+          <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">Join the Ritual</p>
+          <h2 className="font-display text-4xl md:text-5xl text-charcoal mb-4">10% off your first order</h2>
+          <p className="text-muted mb-8 max-w-xl mx-auto">Subscribe for early access to new launches, skincare rituals, and members-only offers.</p>
+          {done ? (
+            <div className="inline-flex items-center gap-3 bg-ivory px-6 py-4 rounded-full">
+              <Icon.Check className="w-5 h-5 text-sage"/>
+              <span className="text-sm">Welcome to SkinCan. Check your inbox for your code.</span>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com"
+                className="flex-1 bg-ivory border border-sand rounded-full px-6 py-4 text-sm"/>
+              <button className="btn-primary px-8 py-4 text-xs tracking-[0.25em] uppercase rounded-full">Subscribe</button>
+            </form>
+          )}
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   CONTACT PAGE
+   ============================================================ */
+function ContactPage() {
+  const [sent, setSent] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const submit = (e) => { e.preventDefault(); setSent(true); };
+  return (
+    <section className="pt-32 pb-24">
+      <div className="max-w-6xl mx-auto px-5 lg:px-10">
+        <Reveal>
+          <div className="text-center mb-14">
+            <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">Get in Touch</p>
+            <h1 className="font-display text-5xl md:text-6xl text-charcoal">We'd love to hear from you</h1>
+          </div>
+        </Reveal>
+        <div className="grid md:grid-cols-2 gap-12">
+          <Reveal>
+            <div className="space-y-6">
+              {[
+                { label: 'Email', value: 'hello@skincan.com', icon: '✉' },
+                { label: 'Phone', value: '+1 (800) 742-CARE', icon: '☏' },
+                { label: 'Atelier', value: '14 Rue de Sèvres, Paris 75007', icon: '⌂' },
+                { label: 'Hours', value: 'Mon–Fri · 9am–6pm CET', icon: '◷' },
+              ].map((c, i) => (
+                <div key={i} className="flex gap-4 items-start p-5 bg-ivory rounded-2xl">
+                  <div className="w-10 h-10 rounded-full bg-cream text-forest flex items-center justify-center text-lg">{c.icon}</div>
+                  <div>
+                    <p className="text-xs tracking-widest uppercase text-gold mb-1">{c.label}</p>
+                    <p className="text-charcoal">{c.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+          <Reveal delay={200}>
+            {sent ? (
+              <div className="bg-ivory rounded-3xl p-10 text-center h-full flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-sage text-cream flex items-center justify-center mb-5">
+                  <Icon.Check className="w-8 h-8"/>
+                </div>
+                <h3 className="font-display text-3xl mb-2">Message received</h3>
+                <p className="text-muted">We'll be in touch within 24 hours.</p>
+              </div>
+            ) : (
+              <form onSubmit={submit} className="bg-ivory rounded-3xl p-8 md:p-10 space-y-5">
+                <div>
+                  <label className="text-xs tracking-widest uppercase text-muted mb-2 block">Name</label>
+                  <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                    className="w-full bg-cream border border-sand rounded-xl px-5 py-3"/>
+                </div>
+                <div>
+                  <label className="text-xs tracking-widest uppercase text-muted mb-2 block">Email</label>
+                  <input type="email" required value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                    className="w-full bg-cream border border-sand rounded-xl px-5 py-3"/>
+                </div>
+                <div>
+                  <label className="text-xs tracking-widest uppercase text-muted mb-2 block">Subject</label>
+                  <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})}
+                    className="w-full bg-cream border border-sand rounded-xl px-5 py-3">
+                    <option value="">Select a topic</option>
+                    <option>Order inquiry</option>
+                    <option>Product question</option>
+                    <option>Wholesale</option>
+                    <option>Press</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs tracking-widest uppercase text-muted mb-2 block">Message</label>
+                  <textarea required rows="5" value={form.message} onChange={e => setForm({...form, message: e.target.value})}
+                    className="w-full bg-cream border border-sand rounded-xl px-5 py-3 resize-none"/>
+                </div>
+                <button className="btn-primary w-full py-4 text-xs tracking-[0.25em] uppercase">Send Message</button>
+              </form>
+            )}
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   CHECKOUT
+   ============================================================ */
+function Checkout({ onBack, onComplete }) {
+  const { cart, cartTotal, clearCart } = useStore();
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({ email:'', name:'', address:'', city:'', zip:'', country:'US', card:'', exp:'', cvv:'' });
+  const shipping = cartTotal >= 60 ? 0 : 6;
+  const tax = +(cartTotal * 0.08).toFixed(2);
+  const total = cartTotal + shipping + tax;
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (step === 1) return setStep(2);
+    clearCart();
+    onComplete();
+  };
+
+  return (
+    <section className="pt-32 pb-24 min-h-screen">
+      <div className="max-w-6xl mx-auto px-5 lg:px-10">
+        <button onClick={onBack} className="text-xs tracking-widest uppercase text-muted link-underline mb-8 inline-block">← Continue shopping</button>
+        <h1 className="font-display text-4xl md:text-5xl mb-10">Secure Checkout</h1>
+
+        <div className="grid lg:grid-cols-3 gap-10">
+          <form onSubmit={submit} className="lg:col-span-2 space-y-6">
+            <div className="flex gap-3 mb-6">
+              {[1,2].map(s => (
+                <div key={s} className={`flex-1 h-1 rounded-full ${step >= s ? 'bg-forest' : 'bg-sand'}`}></div>
+              ))}
+            </div>
+
+            {step === 1 && (
+              <div className="bg-ivory rounded-3xl p-8 space-y-4">
+                <h3 className="font-display text-2xl mb-2">Contact & Shipping</h3>
+                <input required placeholder="Email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
+                  className="w-full bg-cream border border-sand rounded-xl px-5 py-3"/>
+                <input required placeholder="Full name" value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                  className="w-full bg-cream border border-sand rounded-xl px-5 py-3"/>
+                <input required placeholder="Street address" value={form.address} onChange={e => setForm({...form, address: e.target.value})}
+                  className="w-full bg-cream border border-sand rounded-xl px-5 py-3"/>
+                <div className="grid grid-cols-2 gap-4">
+                  <input required placeholder="City" value={form.city} onChange={e => setForm({...form, city: e.target.value})}
+                    className="bg-cream border border-sand rounded-xl px-5 py-3"/>
+                  <input required placeholder="ZIP / Postal" value={form.zip} onChange={e => setForm({...form, zip: e.target.value})}
+                    className="bg-cream border border-sand rounded-xl px-5 py-3"/>
+                </div>
+                <button className="btn-primary w-full py-4 text-xs tracking-[0.25em] uppercase mt-4">Continue to Payment</button>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="bg-ivory rounded-3xl p-8 space-y-4">
+                <h3 className="font-display text-2xl mb-2">Payment</h3>
+                <div className="flex gap-2 mb-2 text-xs tracking-widest uppercase text-muted">
+                  <span className="flex items-center gap-1"><Icon.Shield className="w-4 h-4 text-sage"/> Secured by 256-bit SSL</span>
+                </div>
+                <input required placeholder="Card number" value={form.card} onChange={e => setForm({...form, card: e.target.value})}
+                  className="w-full bg-cream border border-sand rounded-xl px-5 py-3"/>
+                <div className="grid grid-cols-2 gap-4">
+                  <input required placeholder="MM / YY" value={form.exp} onChange={e => setForm({...form, exp: e.target.value})}
+                    className="bg-cream border border-sand rounded-xl px-5 py-3"/>
+                  <input required placeholder="CVV" value={form.cvv} onChange={e => setForm({...form, cvv: e.target.value})}
+                    className="bg-cream border border-sand rounded-xl px-5 py-3"/>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setStep(1)} className="px-6 py-4 border border-sand rounded-full text-xs tracking-widest uppercase">Back</button>
+                  <button className="btn-primary flex-1 py-4 text-xs tracking-[0.25em] uppercase">Pay ${total.toFixed(2)}</button>
+                </div>
+              </div>
+            )}
+          </form>
+
+          <aside className="bg-ivory rounded-3xl p-8 h-fit sticky top-28">
+            <h3 className="font-display text-2xl mb-5">Order Summary</h3>
+            <div className="space-y-4 mb-5 max-h-64 overflow-y-auto">
+              {cart.map(i => (
+                <div key={i.id} className="flex gap-3">
+                  <div className="relative">
+                    <img src={i.img} alt={i.name} className="w-14 h-16 object-cover rounded-lg bg-cream"/>
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-charcoal text-cream text-[10px] flex items-center justify-center">{i.qty}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm leading-tight">{i.name}</p>
+                    <p className="text-xs text-muted">${i.price} each</p>
+                  </div>
+                  <p className="text-sm">${(i.price * i.qty).toFixed(2)}</p>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-sand pt-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>${cartTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Shipping</span><span>{shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Tax</span><span>${tax.toFixed(2)}</span></div>
+              <div className="flex justify-between font-display text-2xl pt-3 border-t border-sand mt-3">
+                <span>Total</span><span>${total.toFixed(2)}</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   ORDER CONFIRMATION
+   ============================================================ */
+function OrderConfirmation({ onContinue }) {
+  return (
+    <section className="pt-40 pb-24 min-h-screen">
+      <div className="max-w-2xl mx-auto px-5 text-center">
+        <div className="w-20 h-20 mx-auto rounded-full bg-sage text-cream flex items-center justify-center mb-6 animate-fade-up">
+          <Icon.Check className="w-10 h-10"/>
+        </div>
+        <h1 className="font-display text-5xl md:text-6xl mb-4">Thank you</h1>
+        <p className="text-muted text-lg mb-2">Your order has been placed.</p>
+        <p className="text-sm text-muted mb-10">Confirmation #SCN-{Math.floor(Math.random()*900000+100000)} · A receipt is on its way to your inbox.</p>
+        <button onClick={onContinue} className="btn-primary px-10 py-4 text-xs tracking-[0.25em] uppercase">Continue Shopping</button>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   WISHLIST PAGE
+   ============================================================ */
+function WishlistPage({ onOpen }) {
+  const { wishlist, toggleWishlist, addToCart } = useStore();
+  return (
+    <section className="pt-32 pb-24 min-h-screen">
+      <div className="max-w-7xl mx-auto px-5 lg:px-10">
+        <h1 className="font-display text-5xl mb-3">Your Wishlist</h1>
+        <p className="text-muted mb-10">{wishlist.length} saved {wishlist.length === 1 ? 'item' : 'items'}</p>
+        {wishlist.length === 0 ? (
+          <p className="text-muted">Your wishlist is empty. Tap ♡ on any product to save it here.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-7">
+            {wishlist.map((p, i) => <ProductCard key={p.id} product={p} onOpen={onOpen} delay={i*60}/>)}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+function Footer({ onNav }) {
+  return (
+    <footer className="bg-charcoal text-cream/80 pt-20 pb-10">
+      <div className="max-w-7xl mx-auto px-5 lg:px-10">
+        <div className="grid md:grid-cols-4 gap-10 pb-14 border-b border-cream/10">
+          <div>
+            <div className="flex items-center gap-2 mb-5">
+              <span className="w-9 h-9 rounded-full bg-gold text-charcoal flex items-center justify-center font-display text-xl">S</span>
+              <span className="font-display text-2xl text-cream">Skin<span className="text-gold">Can</span></span>
+            </div>
+            <p className="text-sm leading-relaxed text-cream/60">Luxury skincare, crafted in Paris. Clean formulas, visible results, conscious packaging.</p>
+          </div>
+          <div>
+            <h4 className="text-xs tracking-[0.3em] uppercase text-gold mb-5">Shop</h4>
+            <ul className="space-y-3 text-sm">
+              {['Serums','Moisturizers','Cleansers','Sunscreens','Gift Sets'].map(l => <li key={l}><button className="link-underline hover:text-cream">{l}</button></li>)}
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs tracking-[0.3em] uppercase text-gold mb-5">SkinCan</h4>
+            <ul className="space-y-3 text-sm">
+              {[{l:'Our Story',v:'about'},{l:'Contact',v:'contact'},{l:'Sustainability',v:'about'},{l:'Press',v:'contact'}].map(x => <li key={x.l}><button onClick={() => onNav(x.v)} className="link-underline hover:text-cream">{x.l}</button></li>)}
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs tracking-[0.3em] uppercase text-gold mb-5">Support</h4>
+            <ul className="space-y-3 text-sm">
+              {['Shipping','Returns','FAQ','Track Order'].map(l => <li key={l}><button className="link-underline hover:text-cream">{l}</button></li>)}
+            </ul>
+          </div>
+        </div>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 text-xs text-cream/50">
+          <p>© 2026 SkinCan. Crafted with care in Paris.</p>
+          <div className="flex gap-6">
+            <button className="link-underline hover:text-cream">Privacy</button>
+            <button className="link-underline hover:text-cream">Terms</button>
+            <button className="link-underline hover:text-cream">Cookies</button>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function Toast() {
+  const { toast } = useStore();
+  if (!toast) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-charcoal text-cream px-6 py-3 rounded-full shadow-2xl text-sm flex items-center gap-3 animate-fade-up">
+      <Icon.Check className="w-4 h-4 text-gold"/>
+      {toast}
+    </div>
+  );
+}
+
+/* ============================================================
+   APP
+   ============================================================ */
+function AppShell() {
+  const [view, setView] = useState('home');
+  const [cartOpen, setCartOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [activeProduct, setActiveProduct] = useState(null);
+  const [shopCategory, setShopCategory] = useState('all');
+
+  const nav = (v) => {
+    setView(v);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const openProduct = (p) => setActiveProduct(p);
+
+  return (
+    <div className="min-h-screen">
+      <Header onNav={nav} currentView={view} onOpenCart={() => setCartOpen(true)} onOpenSearch={() => setSearchOpen(true)}/>
+
+      {view === 'home' && (
+        <>
+          <Hero onShop={() => { nav('shop'); }}/>
+          <Marquee/>
+          <CategoryStrip active={shopCategory} onChange={(c) => { setShopCategory(c); nav('shop'); }}/>
+          <FeaturedProducts onOpen={openProduct} initialCategory={shopCategory}/>
+          <StorySection/>
+          <Testimonials/>
+          <Newsletter/>
+        </>
+      )}
+
+      {view === 'shop' && (
+        <>
+          <div className="pt-32 pb-4">
+            <div className="max-w-7xl mx-auto px-5 lg:px-10">
+              <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">The Collection</p>
+              <h1 className="font-display text-5xl md:text-6xl">Shop all</h1>
+            </div>
+          </div>
+          <FeaturedProducts onOpen={openProduct} initialCategory={shopCategory}/>
+          <Newsletter/>
+        </>
+      )}
+
+      {view === 'about' && (
+        <>
+          <div className="pt-32 pb-4">
+            <div className="max-w-7xl mx-auto px-5 lg:px-10 text-center">
+              <p className="text-xs tracking-[0.3em] uppercase text-gold mb-3">Our Story</p>
+              <h1 className="font-display text-5xl md:text-6xl mb-6">A decade of devotion to skin</h1>
+              <p className="text-muted max-w-2xl mx-auto leading-relaxed">SkinCan was born from a simple belief: skincare should be effective, elegant, and honest. What began in a small Parisian lab has grown into a global ritual — trusted by dermatologists, editors, and thousands of devoted customers.</p>
+            </div>
+          </div>
+          <StorySection/>
+          <Testimonials/>
+          <Newsletter/>
+        </>
+      )}
+
+      {view === 'contact' && <ContactPage/>}
+      {view === 'wishlist' && <WishlistPage onOpen={openProduct}/>}
+      {view === 'checkout' && <Checkout onBack={() => nav('home')} onComplete={() => nav('confirmed')}/>}
+      {view === 'confirmed' && <OrderConfirmation onContinue={() => nav('home')}/>}
+
+      <Footer onNav={nav}/>
+
+      <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} onCheckout={() => { setCartOpen(false); nav('checkout'); }}/>
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} onOpenProduct={openProduct}/>
+      {activeProduct && <ProductModal product={activeProduct} onClose={() => setActiveProduct(null)}/>}
+      <Toast/>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <StoreProvider>
+      <AppShell/>
+    </StoreProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
